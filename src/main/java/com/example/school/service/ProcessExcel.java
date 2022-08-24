@@ -13,10 +13,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -25,25 +30,26 @@ public class ProcessExcel {
     @Autowired
     MkabRepository mkabRepository;
 
-    public void run() {
-//        mymatcher("178-589-563 55");
-//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-//        LocalDate date = LocalDate.parse("2001-07-24", formatter);
-//        Mkab person = mkabRepository.findBy(date, "АЗАРОВА", "АЛЕВТИНА", "ВИТАЛЬЕВНА");
-//        System.out.println(person);
+    private final String source ="D:\\temp\\Справки ШП в ЕМИАС_xlsx";
 
-        DataFormatter dataFormatter = new DataFormatter();
-        String excelFilePath;
+    public void runs() throws IOException {
+        List<Path> files = Files.walk(Paths.get(source)).filter(Files::isRegularFile).collect(Collectors.toList());
+//        System.out.println(files.size());
+        for (int i = 0; i < files.size(); i++) {
+            log.debug("Обрабатывается - " + files.get(i).getFileName().toString() + " # " + (i + 1));
+            run(files.get(i));
+        }
+    }
+    public void run(Path path) {
+
+//        String excelFilePath;
         try {
-            excelFilePath = "Справки ШП в ЕМИАС ГБУЗ МО КГБ_.xlsx";
-//            Biff8EncryptionKey.setCurrentUserPassword("3178");
-//            POIFSFileSystem fs = new POIFSFileSystem(new File(excelFilePath), false);
-//            opcPackage = OPCPackage.open(excelFilePath, PackageAccess.READ_WRITE);
-            FileInputStream fis = new FileInputStream(new File(excelFilePath));
+//            excelFilePath = "Справки ШП в ЕМИАС ГБУЗ МО КГБ_.xlsx";
+            FileInputStream fis = new FileInputStream(path.toString());
             XSSFWorkbook book = new XSSFWorkbook(fis);
             XSSFSheet sheet = book.getSheetAt(0);
 
-            // Add additional column for results
+            // go go
             int count = sheet.getLastRowNum();
             for (int i = 1; i <= count; i++) {
                 Row currentRow = sheet.getRow(i);
@@ -55,44 +61,43 @@ public class ProcessExcel {
                 }
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy h:mm");
                 LocalDate date = LocalDate.parse(currentRow.getCell(5).getStringCellValue(), formatter);
-                log.info("#" + i + " --> " + date);
+                log.debug("#" + i + " --> " + date);
                 ;
                 Mkab mkab = mkabRepository.findBy(date,
                         currentRow.getCell(2).getStringCellValue(),
                         currentRow.getCell(3).getStringCellValue(),
                         currentRow.getCell(4).getStringCellValue());//"АЛЕВТИНА", "ВИТАЛЬЕВНА");
                 if (mkab == null) {
-                    log.info("mkab not found");
+                    log.debug("mkab not found");
                     continue;
                 }
 
-                log.info(currentRow.getCell(2).getStringCellValue() + "--" + "police# " + mkab.getN_pol() + " snils# " + mkab.getSs() + " s_pol# " + mkab.getS_pol());
-                //#7770 --> 2011-11-19  police#  snils#    -   -     s_pol# null
+                log.debug(currentRow.getCell(2).getStringCellValue() + "--" + "police# " + mkab.getN_pol() + " snils# " + mkab.getSs());
 
                 Cell cell;
                 // update снилс
                 if (snilsMatcher(mkab.getSs())) {
                     if (currentRow.getCell(9) != null) {
                         currentRow.getCell(9).setCellValue(mkab.getSs());
-                        log.info("CreateUpdated snils " + mkab.getSs());
+                        log.debug("CreateUpdated snils " + mkab.getSs());
                     } else {
                         cell = currentRow.createCell(9, CellType.STRING);
                         cell.setCellValue(mkab.getSs());
-                        log.info("Updated snils " + mkab.getSs());
+                        log.debug("Updated snils " + mkab.getSs());
                     }
                 } else {
                     // add police
                     cell = currentRow.createCell(currentRow.getLastCellNum(), CellType.STRING);
                     if (mkab.getN_pol().trim().length() == 16) {
                         cell.setCellValue(mkab.getN_pol());
-                        log.info("Added police# " + mkab.getN_pol());
+                        log.debug("Added police# " + mkab.getN_pol());
                     } else {
                         //add s_police
                         if (mkab.getS_pol() != null && !mkab.getS_pol().trim().isEmpty()) {
                             cell = currentRow.createCell(currentRow.getLastCellNum(), CellType.STRING);
                             if (mkab.getS_pol().trim().length() == 6) {
                                 cell.setCellValue(mkab.getS_pol().trim() + mkab.getN_pol().trim());
-                                log.info("Added S+N police# " + mkab.getN_pol());
+                                log.debug("Added S+N police# " + mkab.getN_pol());
                             }
                         }
                     }
@@ -105,7 +110,7 @@ public class ProcessExcel {
             }
             // finish
             fis.close();//Close the InputStream
-            OutputStream outputStream = new FileOutputStream(excelFilePath);//Open FileOutputStream to write updates
+            OutputStream outputStream = new FileOutputStream(path.toString());//Open FileOutputStream to write updates
             book.write(outputStream); //write changes
             outputStream.close();  //close the stream
             book.close();
@@ -115,14 +120,20 @@ public class ProcessExcel {
     }
 
     public boolean snilsMatcher(String s) {
+        //        mymatcher("178-589-563 55");
+//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+//        LocalDate date = LocalDate.parse("2001-07-24", formatter);
+//        Mkab person = mkabRepository.findBy(date, "АЗАРОВА", "АЛЕВТИНА", "ВИТАЛЬЕВНА");
+//        System.out.println(person);
         String regex = "^\\d{3}-\\d{3}-\\d{3} \\d{2}$";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(s);
 //        System.out.println(s + " : " + matcher.matches());
         if (s.equals("000-000-000 00")) {
-            log.info("#" + " --> " + "000-000-000 00");
+            log.debug("#" + " --> " + "000-000-000 00");
             return false;
         }
         return matcher.matches();
     }
+
 }

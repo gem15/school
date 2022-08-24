@@ -42,6 +42,7 @@
 
     <logger name="com.example" level="debug" additivity="false">
         <appender-ref ref="Console"/>
+        <appender-ref ref="RollingFile"/>
     </logger>
 <!--    additivity="false"-->
 
