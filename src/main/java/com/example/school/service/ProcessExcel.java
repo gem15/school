@@ -35,7 +35,7 @@ public class ProcessExcel {
         DataFormatter dataFormatter = new DataFormatter();
         String excelFilePath;
         try {
-            excelFilePath = "Справки ШП в ЕМИАС ГАУЗ МО Воскресенская областная больница.xlsx";
+            excelFilePath = "Справки ШП в ЕМИАС ГБУЗ МО КГБ_.xlsx";
 //            Biff8EncryptionKey.setCurrentUserPassword("3178");
 //            POIFSFileSystem fs = new POIFSFileSystem(new File(excelFilePath), false);
 //            opcPackage = OPCPackage.open(excelFilePath, PackageAccess.READ_WRITE);
@@ -61,7 +61,12 @@ public class ProcessExcel {
                         currentRow.getCell(2).getStringCellValue(),
                         currentRow.getCell(3).getStringCellValue(),
                         currentRow.getCell(4).getStringCellValue());//"АЛЕВТИНА", "ВИТАЛЬЕВНА");
-                log.info("police# " + mkab.getN_pol() + " snils# " + mkab.getSs() + " s_pol# " + mkab.getS_pol());
+                if (mkab == null) {
+                    log.info("mkab not found");
+                    continue;
+                }
+
+                log.info(currentRow.getCell(2).getStringCellValue() + "--" + "police# " + mkab.getN_pol() + " snils# " + mkab.getSs() + " s_pol# " + mkab.getS_pol());
                 //#7770 --> 2011-11-19  police#  snils#    -   -     s_pol# null
 
                 Cell cell;
@@ -69,23 +74,30 @@ public class ProcessExcel {
                 if (snilsMatcher(mkab.getSs())) {
                     if (currentRow.getCell(9) != null) {
                         currentRow.getCell(9).setCellValue(mkab.getSs());
-                        log.info("Updated snils " + mkab.getSs());
+                        log.info("CreateUpdated snils " + mkab.getSs());
                     } else {
-                        cell = currentRow.createCell(9,CellType.STRING);
+                        cell = currentRow.createCell(9, CellType.STRING);
                         cell.setCellValue(mkab.getSs());
+                        log.info("Updated snils " + mkab.getSs());
+                    }
+                } else {
+                    // add police
+                    cell = currentRow.createCell(currentRow.getLastCellNum(), CellType.STRING);
+                    if (mkab.getN_pol().trim().length() == 16) {
+                        cell.setCellValue(mkab.getN_pol());
+                        log.info("Added police# " + mkab.getN_pol());
+                    } else {
+                        //add s_police
+                        if (mkab.getS_pol() != null && !mkab.getS_pol().trim().isEmpty()) {
+                            cell = currentRow.createCell(currentRow.getLastCellNum(), CellType.STRING);
+                            if (mkab.getS_pol().trim().length() == 6) {
+                                cell.setCellValue(mkab.getS_pol().trim() + mkab.getN_pol().trim());
+                                log.info("Added S+N police# " + mkab.getN_pol());
+                            }
+                        }
                     }
                 }
 
-                // add police
-                cell = currentRow.createCell(currentRow.getLastCellNum(), CellType.STRING);
-                cell.setCellValue(mkab.getN_pol());
-                log.info("Added police# " + mkab.getN_pol());
-
-                //add s_police
-                if (mkab.getS_pol() != null && !mkab.getS_pol().trim().isEmpty()) {
-                    cell = currentRow.createCell(currentRow.getLastCellNum(), CellType.STRING);
-                    cell.setCellValue(mkab.getS_pol());
-                }
 /*
                 if(currentRow.getRowNum() == 0)
                     cell.setCellValue("NEW-COLUMN");
@@ -107,6 +119,10 @@ public class ProcessExcel {
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(s);
 //        System.out.println(s + " : " + matcher.matches());
+        if (s.equals("000-000-000 00")) {
+            log.info("#" + " --> " + "000-000-000 00");
+            return false;
+        }
         return matcher.matches();
     }
 }

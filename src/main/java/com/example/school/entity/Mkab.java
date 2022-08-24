@@ -10,6 +10,7 @@ public class Mkab {
     String n_pol;
     String ss;
     String s_pol;
+//    String pol;
 }
 /*
 package com.example.school.entity;

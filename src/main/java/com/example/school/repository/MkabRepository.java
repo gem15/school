@@ -2,13 +2,12 @@ package com.example.school.repository;
 
 import com.example.school.entity.Mkab;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -16,10 +15,12 @@ import java.time.LocalDate;
 @Repository
 public class MkabRepository {
     String query = "select top(1) m.n_pol,m.ss, m.s_pol " +
-            "from dbo.hlt_MKAB m where\n" +
-            "N_POL is not null and" +
-            " m.date_bd = :date_bd and m.family = :family and m.name = :name and m.ot = :ot" +
-            " order by DateMKAB desc";
+            "from dbo.hlt_MKAB m where" +
+            " SS is not null" +
+            " and N_POL is not null " +
+            " and (not (coalesce( rtrim(ss),'')= '') or (not coalesce( rtrim(n_pol),'')= '' and len(n_pol) = 16))"+
+            " and m.date_bd = :date_bd and m.family = :family and m.name = :name and m.ot = :ot";
+//            + " order by DateMKAB desc";
 
     @Autowired
     private NamedParameterJdbcTemplate namedJdbcTemplate;
@@ -35,7 +36,11 @@ public class MkabRepository {
                 .addValue("family", family)
                 .addValue("name", name)
                 .addValue("ot", ot);
-        mkab= (Mkab) namedJdbcTemplate.queryForObject(query,params, new MkabMapper());
+        try {
+            mkab= (Mkab) namedJdbcTemplate.queryForObject(query,params, new MkabMapper());
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        }
         return mkab;
     }
 
@@ -46,6 +51,7 @@ public class MkabRepository {
             Mkab m=new Mkab();
             m.setN_pol(rs.getString("n_pol"));
             m.setSs(rs.getString("ss"));
+//            m.setPol(rs.getString("pol"));
             return m;
         }
     }
