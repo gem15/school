@@ -31,19 +31,10 @@ public class ProcessExcel {
 
     @Autowired
     MkabRepository mkabRepository;
-    @Autowired
 
     private final String source = "D:\\temp\\Справки ШП в ЕМИАС_xlsx";
 
     public void runs() throws IOException {
-
-//        List<Emd>emds= (List<Emd>) emdRepository.findAll();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        LocalDate date = LocalDate.parse("2001-07-24", formatter);
-        Mkab person = mkabRepository.findBy(date, "АЗАРОВА", "АЛЕВТИНА", "ВИТАЛЬЕВНА");
-
-        System.out.println(person);
-
 
         List<Path> files = Files.walk(Paths.get(source)).filter(Files::isRegularFile).collect(Collectors.toList());
 //        System.out.println(files.size());
@@ -55,14 +46,11 @@ public class ProcessExcel {
 
     public void run(Path path) {
 
-//        String excelFilePath;
         try {
-//            excelFilePath = "Справки ШП в ЕМИАС ГБУЗ МО КГБ_.xlsx";
             FileInputStream fis = new FileInputStream(path.toString());
             XSSFWorkbook book = new XSSFWorkbook(fis);
             XSSFSheet sheet = book.getSheetAt(0);
 
-            // go go
             int j = 0;
             int count = sheet.getLastRowNum();
             for (int i = 1; i <= count; i++) {
@@ -86,7 +74,7 @@ public class ProcessExcel {
 
                 Cell cell = currentRow.createCell(15, CellType.STRING);
                 if (mkab == null) {
-                    cell.setCellValue("n/f");
+                    cell.setBlank();
                     formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
                     String fio = date.format(formatter) + " " +
                             currentRow.getCell(2).getStringCellValue() + " " +
@@ -98,10 +86,11 @@ public class ProcessExcel {
 //                    cell = currentRow.createCell(currentRow.getLastCellNum(), CellType.STRING);
                     if (mkab.getN_pol().trim().length() == 16) {
                         cell.setCellValue(mkab.getN_pol());
-                        //log.debug("Added police# " + mkab.getN_pol());
+                        log.debug("Added police# " + mkab.getN_pol());
                     } else {
                         if (mkab.getS_pol() != null && mkab.getS_pol().trim().length() == 6) {
                             cell.setCellValue(mkab.getS_pol().trim() + mkab.getN_pol().trim());
+                            log.debug("Added combo police# " + mkab.getN_pol());
                         }
                     }
                     continue;
