@@ -16,9 +16,10 @@ import java.time.LocalDate;
 public class MkabRepository {
     String query = "select top(1) m.n_pol,m.ss, m.s_pol " +
             "from dbo.hlt_MKAB m where" +
-            " SS is not null" +
-            " and N_POL is not null " +
-            " and (not (coalesce( rtrim(ss),'')= '') or (not coalesce( rtrim(n_pol),'')= '' and len(n_pol) = 16))"+
+            " not ((coalesce( rtrim(ss),'')= '') or SS is  null)" +
+//            " SS is not null" +
+//            " and N_POL is not null " +
+//            " and (not (coalesce( rtrim(ss),'')= '') or (not coalesce( rtrim(n_pol),'')= '' and len(n_pol) = 16))"+
             " and m.date_bd = :date_bd and m.family = :family and m.name = :name and m.ot = :ot";
 //            + " order by DateMKAB desc";
 

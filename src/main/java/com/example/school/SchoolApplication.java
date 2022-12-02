@@ -1,6 +1,8 @@
 package com.example.school;
 
 import com.example.school.service.ProcessExcel;
+import com.example.school.service.ProcessExcelChld;
+import com.example.school.service.PutDownSnils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -12,7 +14,9 @@ import java.io.IOException;
 public class SchoolApplication  implements CommandLineRunner {
 
 	@Autowired
-	ProcessExcel excel;
+	ProcessExcelChld excel;
+	@Autowired
+	PutDownSnils  snils;
 
 	public static void main(String[] args) {
 		SpringApplication.run(SchoolApplication.class, args);
@@ -21,7 +25,9 @@ public class SchoolApplication  implements CommandLineRunner {
 	@Override
 	public void run(String... args)  {
 		try {
-			excel.runs();
+//			excel.runs();
+			//проставить СНИЛС по ФИО и ДР
+			snils.runs();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
