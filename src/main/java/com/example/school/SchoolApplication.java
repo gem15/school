@@ -20,17 +20,17 @@ public class SchoolApplication implements CommandLineRunner {
     PutDownSnilsWeb  snils;
 
     public static void main(String[] args) {
-        SpringApplication.run(SchoolApplication.class, args);
+        SpringApplication.run(SchoolApplication.class, args).close();
     }
 
     @Override
     public void run(String... args) {
-        try {
-            snils.runs();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-/*
+        String s="10601904302";//106-019-043 02
+        s = s.replaceFirst("(\\d{3})(\\d{3})(\\d{3})(\\d{2})", "$1-$2-$3 $4");
+        //            snils.runs();
+        System.out.println("ok");
+//        snils.dataEnrichment();
+        /*
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 //		formatter = formatter.withLocale( putAppropriateLocaleHere );  // Locale specifies human language for translating, and cultural norms for lowercase/uppercase and abbreviations and such. Example: Locale.US or Locale.CANADA_FRENCH
         LocalDate date = LocalDate.parse("1960-05-03", formatter);
